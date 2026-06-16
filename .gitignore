@@ -1,0 +1,52 @@
+# Binaries
+xeme
+xeme-mcp
+xeme-os
+xeme-campaigns
+xeme-ledger-server
+xeme-workflows
+*.exe
+*.dylib
+*.so
+
+# Runtime
+workspace/
+logs/
+deepline/
+*.log
+*.csv
+*.tsv
+*.json
+!config/*.jsonc
+!config/*.yaml
+!README.md
+
+# Engine outputs
+workspace/aeo_*.json
+workspace/intel_*.json
+workspace/sequence_*.json
+workspace/*.tmp
+
+# Local
+.env
+.env.local
+*.bak
+.DS_Store
+
+# Build
+*.test
+*.out
+
+# IDE
+.vscode/
+.idea/
+
+# Go
+vendor/
+.idea/
+*.iml
+
+# Agent/runtime tmp
+tmp/
+.cache/
+.swarm/

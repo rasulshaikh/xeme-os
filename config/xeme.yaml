@@ -1,0 +1,221 @@
+# Xeme OS — Unified Configuration (proprietary)
+# All keys map to Xeme OS modules. No third-party GTM platform names appear here.
+
+# XEME TOOL PATHS
+# These point to Xeme's internal proprietary engines, exposed as
+# single static binaries in the runtime.
+tools:
+  signal:      "xeme-signal"
+  enrich:      "xeme-enrich"
+  email:       "xeme-email"
+  crm:         "xeme-crm"
+  ai:          "xeme-ai"
+  scrape:      "xeme-scrape"
+  python:      "python3"
+  curl:        "curl"
+
+# XEME ENRICH — proprietary waterfall enrichment engine
+enrich:
+  default_roles:
+    - "Chief Marketing Officer"
+    - "VP of Marketing"
+    - "VP Marketing"
+    - "VP Demand Generation"
+    - "SVP Marketing"
+    - "Head of Marketing"
+  contact_limit: 1
+  email_min_results: 1
+  max_rows_per_run: 500
+  cost_cap_usd_per_run: 50
+
+# MOLTSETS — B2B contact data API (100%-verified emails + mobile phones)
+# Docs:  https://developer.moltsets.com
+# Base:  https://api.moltsets.com/api/v1/tools/
+# Auth: Bearer token, format ms_XXXXXXXXXXX (env: XEME_MOLTSETS_API_KEY)
+# Plans: Free (1K tokens), $27/mo (unlimited, 30 req/min), $97/mo (1K req/min), $497/mo (5K req/min)
+# MCP:   https://mcp.moltsets.com/mcp
+moltsets:
+  enabled: true
+  # API key — set via XEME_MOLTSETS_API_KEY env var (never commit this)
+  # api_key: "ms_your_key_here"
+  base_url: "https://api.moltsets.com/api/v1/tools/"
+  timeout_seconds: 30
+  max_retries: 2
+  # Cost cap per run in USD (0 = unlimited)
+  cost_cap_usd: 10.0
+  # Strategy: which enrichment path to try first
+  # Options: linkedin-first (email+phone via LinkedIn), email-first (HEM→LinkedIn→profile), company-first
+  strategy: "linkedin-first"
+  # Fields to extract from MoltSets responses
+  extract:
+    - email
+    - phone
+    - linkedin_url
+    - company
+    - domain
+    - title
+    - full_name
+    - industry
+    - location
+
+# XEME SIGNAL — proprietary engagement signal engine
+signal:
+  default_account: ""
+  scrape_max_pages: 10
+  scrape_type: "both"
+
+# XEME ICP SCORING (7-gate rubric)
+icp:
+  target_titles:
+    - "Chief Marketing Officer"
+    - "VP of Marketing"
+    - "VP Demand Generation"
+    - "SVP Marketing"
+    - "Head of Marketing"
+  scoring:
+    title_cmo:         50
+    title_vp_marketing: 40
+    title_other:       20
+    signal_evaluating: 25
+    signal_commenting: 20
+    signal_following:  15
+    email_verified:    5
+    tier1_threshold:   70
+    tier2_threshold:   50
+  competitors_by_product:
+    gong:
+      - salesloft.com
+      - outreach.io
+      - clari.com
+      - 6sense.com
+      - revenue.io
+    default: []
+
+# XEME LEDGER — proprietary CRM
+ledger:
+  config_path: "~/.xeme/crm.json"
+  default_remote: "local"
+  batch_size: 50
+  dry_run: false
+
+# XEME SEQUENCER — Multi-channel outreach engine
+# Channels: email, li_connect, li_message, li_post, li_comment,
+#           x_dm, x_post, x_follow, sms, phone, content, wait, task
+sequencer:
+  tick_interval_seconds: 60
+  max_contacts_per_tick: 200
+  default_step_gap_hours: 24
+  # Sensitive actions that require human approval
+  gated_actions:
+    - "li_post"
+    - "x_post"
+    - "sms"
+  # Task output directory (for manual steps)
+  tasks_dir: "~/.xeme/tasks"
+  outbox_dir: "~/.xeme/outbox"
+
+# CHANNELS — connection settings per outreach channel
+channels:
+  email:
+    provider: "smtp"
+    # Set via env: OUTREACH_SMTP_HOST, OUTREACH_SMTP_PORT, OUTREACH_SMTP_USER, OUTREACH_SMTP_PASS, OUTREACH_SMTP_FROM
+  linkedin:
+    provider: "unipile"
+    # Set via env: UNIPILE_API_KEY, UNIPILE_BASE_URL
+    connection_note_max_chars: 300
+  twitter:
+    provider: "x_api_v2"
+    # Set via env: X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET
+  sms:
+    provider: "twilio"
+    # Set via env: TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM
+
+# UNIFIED LEADS DATABASE
+leads:
+  db_path: "~/.xeme/leads.db"
+  # Pipeline stages: discovered → enriched → scored → enrolled → contacted → replied → meeting_booked
+  auto_stage_advance: true
+
+# AUDIT TRAIL
+audit:
+  db_path: "~/.xeme/audit.db"
+  log_all_actions: true
+  retention_days: 365
+
+# OUTPUT
+output:
+  workspace_dir: "./workspace"
+  logs_dir:      "./logs"
+  csv_prefix:    "xeme"
+
+# LOGGING
+logging:
+  level: "info"
+  show_credits: true
+
+# THEIRSTACK — B2B intelligence & signal API (technographics + hiring + buying intent)
+# Docs:  https://theirstack.com/en/docs/api-reference
+# Auth: Bearer token (env: XEME_THEIRSTACK_API_KEY)
+# Coverage: 32k technologies, 202M job postings across 195 countries
+intel:
+  theirstack:
+    enabled: true
+    # api_key set via XEME_THEIRSTACK_API_KEY env var (never commit this)
+    base_url: "https://api.theirstack.com/v1"
+    timeout_seconds: 30
+    max_retries: 2
+    cost_cap_usd: 10.0
+    exclude_agencies: true
+    page_size: 20
+  # BuiltWith Free API — zero-cost technographic lookup (no key required)
+  builtwith:
+    enabled: true
+    # api_key optional — free tier works without it
+    base_url: "https://api.builtwith.com/v1"
+    timeout_seconds: 15
+  # Signal Scraper — free open-source alternative (HN + job boards)
+  scraper:
+    enabled: true
+    sources:
+      - hackernews     # HN "Who Is Hiring" threads (free, no key)
+      - remoteok       # RemoteOK job board API (free, no key)
+    timeout_seconds: 30
+    max_results: 20
+    exclude_agencies: true
+
+# AEO/GEO — Answer Engine Optimization + Generative Engine Optimization
+# Tracks how your brand appears in AI search engines (ChatGPT, Claude, Perplexity,
+# You.com, Phind, Komo). 4-pillar strategy:
+#   1. Prompt mining — what customers ask
+#   2. Mention tracking — which engines mention you
+#   3. Citation analysis — which sources engines cite
+#   4. Content gap detection — what to write next
+aeo:
+  enabled: true
+  # Your brand name (required to enable)
+  # brand: "Xeme"
+  # Your domain
+  # domain: "xeme.app"
+  # Prompts to track (comma-separated in env, or as list here)
+  # examples:
+  #   - "best AI-native GTM tool"
+  #   - "Clay alternative for AI agents"
+  #   - "self-hosted Salesforce alternative"
+  # prompts:
+  #   - "best AI-native GTM tool for Claude Code"
+  #   - "open source GTM operating system"
+  #   - "self-hosted Clay alternative"
+  # Competitor brand names (to compare against)
+  # competitors:
+  #   - "Clay"
+  #   - "Apollo"
+  #   - "Instantly"
+  #   - "Salesforce"
+  # AI engines to query (free: you.com, phind, komo)
+  engines:
+    - you.com
+    - phind
+    - komo
+    # - perplexity  # requires PERPLEXITY_API_KEY
+    # - openai      # requires OPENAI_API_KEY
+    # - anthropic   # requires ANTHROPIC_API_KEY

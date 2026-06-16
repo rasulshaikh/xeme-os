@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "alias": "contact",
+      "tool": "company_to_contact_by_role_waterfall",
+      "payload": {
+        "company_name": "{{company_name}}",
+        "domain": "{{domain}}",
+        "roles": ["Chief Marketing Officer", "VP of Marketing", "VP Marketing", "VP Demand Generation", "SVP Marketing", "Head of Marketing"],
+        "limit": 1
+      }
+    },
+    {
+      "alias": "email_waterfall",
+      "tool": "name_and_domain_to_email_waterfall",
+      "payload": {
+        "first_name": "{{first_name}}",
+        "last_name": "{{last_name}}",
+        "domain": "{{domain}}"
+      },
+      "run_if_js": "return row.first_name && row.last_name;"
+    },
+    {
+      "alias": "extracted_email",
+      "tool": "run_javascript",
+      "payload": {
+        "code": "const cell = row.email_waterfall; if (!cell) return null; const data = (typeof cell === 'string') ? JSON.parse(cell) : cell; const result = data?.result; if (typeof result === 'string' && result.includes('@')) return result; if (result && typeof result === 'object' && result.email) return result.email; return null;"
+      },
+      "run_if_js": "return row.email_waterfall;"
+    },
+    {
+      "alias": "extracted_name",
+      "tool": "run_javascript",
+      "payload": {
+        "code": "const cell = row.contact; if (!cell) return null; const data = (typeof cell === 'string') ? JSON.parse(cell) : cell; const result = data?.result; const list = Array.isArray(result) ? result : (result && Array.isArray(result.data) ? result.data : null); const first = list && list[0]; if (first) return { name: first.full_name || first.name, title: first.title, linkedin: first.linkedin, email: first.email }; return null;"
+      }
+    }
+  ]
+}

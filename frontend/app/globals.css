@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #ffffff;
+  --bg-2: #fafafa;
+  --bg-3: #f4f4f5;
+  --fg: #0a0a0a;
+  --fg-dim: #71717a;
+  --fg-soft: #a1a1aa;
+  --border: #e4e4e7;
+  --border-soft: #f0f0f2;
+  --accent: #0a0a0a;
+  --accent-2: #52525b;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --yellow: #ca8a04;
+  --yellow-bg: #fef3c7;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --blue: #2563eb;
+  --blue-bg: #dbeafe;
+}
+
+:root[data-theme="xeme"] {
+  --bg: #F2EFE6;
+  --bg-2: #E8E2D2;
+  --bg-3: #DDD9CE;
+  --fg: #231F20;
+  --fg-dim: #6B6661;
+  --fg-soft: #999488;
+  --border: #DDD9CE;
+  --border-soft: #E8E2D2;
+  --accent: #C38133;
+  --accent-2: #8B5A2B;
+  --green: #4A6B47;
+  --yellow: #C19034;
+  --red: #A1452D;
+  --blue: #5A6E8C;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+}
+
+:root[data-theme="xeme"] h1,
+:root[data-theme="xeme"] h2,
+:root[data-theme="xeme"] h3 {
+  font-family: var(--font-serif);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
