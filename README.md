@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/xeme-os/xeme/main/.github/banner.png" alt="Xeme OS" width="600">
+  <img src="https://raw.githubusercontent.com/rasulshaikh/xeme-os/main/.github/banner.png" alt="Xeme OS" width="600">
 </p>
 
 <h1 align="center">XEME OS</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> · <a href="#quickstart">Quickstart</a> · <a href="#commands">Commands</a> · <a href="#mcp">MCP</a> · <a href="#stack">Stack</a> · <a href="https://github.com/xeme-os/xeme/issues">Issues</a>
+  <a href="#install">Install</a> · <a href="#quickstart">Quickstart</a> · <a href="#commands">Commands</a> · <a href="#mcp">MCP</a> · <a href="#stack">Stack</a> · <a href="https://github.com/rasulshaikh/xeme-os/issues">Issues</a>
 </p>
 
 ---
@@ -31,13 +31,13 @@ It bundles what took you 6+ paid tools to do:
 
 ```bash
 # 1-click: macOS / Linux (Apple Silicon + Intel + Linux)
-curl -fsSL https://raw.githubusercontent.com/xeme-os/xeme/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rasulshaikh/xeme-os/main/install/install.sh | bash
 
 # Homebrew (macOS / Linux)
 brew install xeme-os/tap/xeme
 
 # Go
-go install github.com/xeme-os/xeme/cmd/xeme@latest
+go install github.com/rasulshaikh/xeme-os/cmd/xeme@latest
 
 # npm (Node wrapper)
 npm install -g xeme-os
