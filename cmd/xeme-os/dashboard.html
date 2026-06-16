@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-terminal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.AppName}} — Dashboard</title>
+<meta name="theme-color" content="#0A0A0A">
+
+<!-- Google Fonts: JetBrains Mono + Inter (required by Dark Terminal) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  XEME OS — Dark Terminal design system
+  Single source of truth. Do not introduce values that aren't here.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<style>
+  /* ── Reset ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Tokens (do not edit — sourced from DESIGN.md) ─────── */
+  :root {
+    /* Color roles */
+    --color-primary:   #E8E8E8;   /* body text */
+    --color-secondary: #7A7A7A;   /* meta / muted */
+    --color-tertiary:  #10B981;   /* emerald accent (primary action) */
+    --color-accent:    #00FF88;   /* brighter emerald (CTA bg) */
+    --color-accent-ink:#000000;   /* text on accent */
+    --color-neutral:   #0A0A0A;   /* page background */
+    --color-surface:   #141414;   /* cards */
+    --color-border:    #262626;   /* thin borders */
+    --color-border-soft:#1F1F1F; /* dividers */
+
+    /* Semantic */
+    --bg:           var(--color-neutral);
+    --bg-card:      var(--color-surface);
+    --bg-elev:      #1A1A1A;
+    --text:         var(--color-primary);
+    --text-dim:     var(--color-secondary);
+    --text-bright:  #FFFFFF;
+    --accent:       var(--color-tertiary);
+    --accent-bright:var(--color-accent);
+    --danger:       #B91C1C;
+    --warn:         #F59E0B;
+    --success:      var(--color-accent);
+
+    /* Typography */
+    --font-display: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --font-body:    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* Radius (sharp brutalist) */
+    --r-sm: 2px;
+    --r-md: 4px;
+    --r-lg: 4px;
+    --r-pill: 9999px;
+
+    /* Borders */
+    --b-1: 1px solid var(--color-border);
+    --b-1-soft: 1px solid var(--color-border-soft);
+
+    /* Hard offset shadows (brutalist — no blur) */
+    --shadow-1: 2px 2px 0 0 var(--color-primary);
+    --shadow-2: 4px 4px 0 0 var(--color-primary);
+    --shadow-3: 6px 6px 0 0 var(--color-primary);
+    --shadow-4: 8px 8px 0 0 var(--color-primary);
+    --shadow-danger: 4px 4px 0 0 var(--danger);
+
+    /* Spacing (4px grid) */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+    --s-10: 80px;
+
+    /* Motion — hard cut, no easing */
+    --t-instant: 0ms;
+    --t-fast: 50ms;
+    --t-base: 100ms;
+    --t-slow: 150ms;
+  }
+
+  /* ── Base ─────────────────────────────────────────────── */
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    min-height: 100vh;
+    background:
+      linear-gradient(var(--bg), var(--bg)),
+      radial-gradient(circle at 20% 0%, rgba(16, 185, 129, 0.04), transparent 40%);
+    background-attachment: fixed;
+  }
+  a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: var(--accent); }
+  code, pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text-bright);
+  }
+  pre { padding: var(--s-3); border: var(--b-1); overflow-x: auto; line-height: 1.6; }
+
+  /* ── Topbar (terminal aesthetic) ─────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--s-3) var(--s-6);
+    background: var(--bg);
+    border-bottom: var(--b-1);
+  }
+  .topbar-brand {
+    display: flex; align-items: center; gap: var(--s-3);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-transform: lowercase;
+  }
+  .topbar-brand .mark {
+    width: 28px; height: 28px;
+    border: var(--b-1);
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--accent);
+    font-size: 14px;
+  }
+  .topbar-brand .name { font-size: 14px; color: var(--text-bright); }
+  .topbar-brand .ver {
+    font-size: 11px; color: var(--text-dim); font-weight: 500;
+    font-family: var(--font-mono);
+  }
+  .topbar-meta {
+    display: flex; align-items: center; gap: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .topbar-meta .pill {
+    padding: 4px 10px;
+    border: var(--b-1);
+    background: var(--bg-card);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .topbar-meta .pill.live { color: var(--accent); border-color: var(--accent); }
+  .topbar-meta .pill .dot {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--accent); margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--s-7) var(--s-6) var(--s-10);
+  }
+
+  /* ── Hero ─────────────────────────────────────────────── */
+  .hero { margin-bottom: var(--s-7); }
+  .hero .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: var(--s-3);
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-bright);
+    margin-bottom: var(--s-2);
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p {
+    color: var(--text-dim);
+    font-size: 14px;
+    max-width: 720px;
+    line-height: 1.6;
+  }
+
+  /* ── Stat tiles (cards) ───────────────────────────────── */
+  .stat {
+    display: flex; flex-direction: column; gap: var(--s-2);
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-bright);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .stat-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Card (Dark Terminal) ────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: var(--b-1);
+    border-radius: var(--r-lg);
+    padding: var(--s-5);
+  }
+  .card-title {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: var(--s-3);
+  }
+  .card-title .badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    background: transparent;
+    border: var(--b-1);
+    color: var(--text-dim);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+  .card-title .badge.engine { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Engine card (terminal style) ───────────────────── */
+  .engine {
+    display: flex; align-items: center; gap: var(--s-3);
+  }
+  .engine-icon {
+    width: 36px; height: 36px;
+    border: var(--b-1);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .engine-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-bright);
+  }
+  .engine-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border: 1px solid var(--text-dim);
+    flex-shrink: 0;
+  }
+  .status-dot.ok {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .status-dot.warn { background: var(--warn); border-color: var(--warn); }
+  .status-dot.err { background: var(--danger); border-color: var(--danger); }
+
+  /* ── Grids ───────────────────────────────────────────── */
+  .grid { display: grid; gap: var(--s-4); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* ── Section header ───────────────────────────────────── */
+  .section { margin-top: var(--s-9); }
+  .section h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: var(--s-4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Tables (terminal aesthetic) ─────────────────────── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: var(--b-1-soft); }
+  th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-elev); }
+  td.mono { font-family: var(--font-mono); font-size: 12px; }
+  td.dim { color: var(--text-dim); }
+
+  /* ── Pills (4 variants) ───────────────────────────────── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    border: var(--b-1);
+    background: transparent;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pill.success { color: var(--accent); border-color: var(--accent); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.err { color: var(--danger); border-color: var(--danger); }
+  .pill.info { color: var(--text); border-color: var(--color-border); }
+  .pill.accent { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Buttons (4 variants from Dark Terminal) ─────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: none; /* brutalist: no easing */
+    border-radius: 0;  /* sharp shape per design spec */
+    text-decoration: none;
+    border: none;
+  }
+  /* Primary — emerald bg, black text, sharp */
+  .btn-primary {
+    background: var(--accent-bright);
+    color: var(--accent-ink);
+    border: none;
+  }
+  .btn-primary:hover {
+    box-shadow: var(--shadow-2);
+    transform: translate(-2px, -2px);
+  }
+  .btn-primary:focus { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  .btn-primary:active { box-shadow: none; transform: translate(0, 0); }
+
+  /* Secondary — near-black bg, emerald text, emerald border, sharp */
+  .btn-secondary {
+    background: var(--bg);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-secondary:hover {
+    box-shadow: 4px 4px 0 0 var(--accent);
+    transform: translate(-2px, -2px);
+  }
+  .btn-secondary:focus { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  .btn-secondary:active { box-shadow: none; transform: translate(0, 0); }
+
+  /* Outline — gray text, dark border, sharp */
+  .btn-outline {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--color-border);
+  }
+  .btn-outline:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-outline:focus { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+  /* Ghost — emerald text, no border, no padding, hover underline */
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent);
+    border: none;
+    padding: 10px 0;
+  }
+  .btn-ghost:hover { text-decoration: underline; }
+  .btn-ghost:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ── Forms (Dark Terminal) ───────────────────────────── */
+  .form-row { display: flex; gap: var(--s-2); align-items: stretch; }
+  input[type="text"], input[type="url"], textarea, select {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--color-border);
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-radius: 0;
+    transition: none;
+  }
+  input[type="text"]:hover, input[type="url"]:hover, textarea:hover, select:hover {
+    border: 2px solid var(--color-primary);
+  }
+  input[type="text"]:focus, input[type="url"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border: 2px solid var(--color-primary);
+    box-shadow: var(--shadow-2);
+  }
+
+  /* ── Code (terminal block) ───────────────────────────── */
+  pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text-bright);
+    padding: var(--s-3);
+    border: var(--b-1);
+    overflow-x: auto;
+    line-height: 1.7;
+  }
+  pre code { background: none; padding: 0; color: var(--accent); }
+
+  /* ── Empty / Loading ─────────────────────────────────── */
+  .empty {
+    text-align: center;
+    padding: var(--s-7);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .empty-icon {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--text-dim);
+    margin-bottom: var(--s-2);
+  }
+  .loading {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 1px solid var(--color-border);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ─────────────────────────────────────────── */
+  footer {
+    margin-top: var(--s-10);
+    padding: var(--s-6);
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-top: var(--b-1);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  footer code { font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="mark">X</div>
+    <div>
+      <div class="name">xeme</div>
+      <div class="ver">v{{.AppVersion}} · AI-native GTM OS</div>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <span class="pill" id="meta-uptime">uptime: —</span>
+    <span class="pill" id="meta-arch">{{.Arch}} · {{.GOOS}}</span>
+    <span class="pill live"><span class="dot"></span>Live</span>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="eyebrow">[ XEME OS — TERMINAL DASHBOARD ]</div>
+    <h1>The last GTM stack <span class="accent">you'll ever pay for.</span></h1>
+    <p>Self-hosted, AI-native GTM operating system. 5 proprietary engines. 6 binaries. 20 MCP tools. Replaces $1,200-2,000/mo of commercial GTM tooling for $0-50/mo.</p>
+  </div>
+
+  <!-- Stat tiles -->
+  <div class="grid grid-4" style="margin-bottom: var(--s-5);">
+    <div class="card">
+      <div class="stat">
+        <span class="stat-label">Engines</span>
+        <span class="stat-value" id="stat-engines"><span class="loading"></span></span>
+        <span class="stat-sub">of 5 proprietary</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stat">
+        <span class="stat-label">Premium</span>
+        <span class="stat-value" id="stat-premium"><span class="loading"></span></span>
+        <span class="stat-sub">molt · theirstack</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stat">
+        <span class="stat-label">Free</span>
+        <span class="stat-value" id="stat-free"><span class="loading"></span></span>
+        <span class="stat-sub">bw · hn · remoteok</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stat">
+        <span class="stat-label">MCP Tools</span>
+        <span class="stat-value" id="stat-tools"><span class="loading"></span></span>
+        <span class="stat-sub">via xeme-mcp stdio</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engines -->
+  <div class="section">
+    <h2>[ engines ]</h2>
+    <div class="grid grid-2" id="engines-grid">
+      <div class="card"><div class="empty"><span class="loading"></span></div></div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="section">
+    <h2>[ quick actions ]</h2>
+    <div class="grid grid-2">
+
+      <div class="card">
+        <div class="card-title">Intel Lookup <span class="badge engine">xeme_intel_company_signals</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          Tech + hiring + intent signals for a domain. Tries TheirStack → BuiltWith → HN.
+        </p>
+        <div class="form-row">
+          <input type="text" id="lookup-domain" placeholder="domain (e.g. moltsets.com)" value="moltsets.com">
+          <button class="btn btn-primary" onclick="doLookup()">Run</button>
+        </div>
+        <div id="lookup-result" style="margin-top: var(--s-3);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Run Pipe <span class="badge engine">xeme_run_pipe</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          End-to-end: scrape → enrich → score → sync to Xeme Ledger. Provide a CSV.
+        </p>
+        <div class="form-row">
+          <input type="text" id="pipe-input" placeholder="/path/to/leads.csv">
+          <button class="btn btn-primary" onclick="doPipe()">Run</button>
+        </div>
+        <div id="pipe-result" style="margin-top: var(--s-3);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Enrich CSV <span class="badge engine">xeme_enrich_leads</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          Waterfall-enrich through local → upstream → MoltSets → demo.
+        </p>
+        <div class="form-row">
+          <input type="text" id="enrich-input" placeholder="/path/to/leads.csv">
+          <button class="btn btn-primary" onclick="doEnrich()">Enrich</button>
+        </div>
+        <div id="enrich-result" style="margin-top: var(--s-3);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Score CSV <span class="badge engine">xeme_score_leads</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          7-gate ICP scoring. Tier 1 ≥ 70. Tier 2 ≥ 50.
+        </p>
+        <div class="form-row">
+          <input type="text" id="score-input" placeholder="/path/to/leads.csv">
+          <button class="btn btn-primary" onclick="doScore()">Score</button>
+        </div>
+        <div id="score-result" style="margin-top: var(--s-3);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AEO/GEO -->
+  <div class="section">
+    <h2>[ aeo / geo — AI search visibility ]</h2>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="card-title">AEO Status <span class="badge engine">xeme_aeo_status</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          Brand, prompts, competitors, AI engines tracked.
+        </p>
+        <div id="aeo-status-result"><span class="loading"></span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Brand Check <span class="badge engine">xeme_aeo_check_brand</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          Run all prompts × all engines. Get mentions + citations + gaps.
+        </p>
+        <button class="btn btn-secondary" onclick="doAEOCheck()">Check Brand</button>
+        <div id="aeo-check-result" style="margin-top: var(--s-3);"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">AEO Score <span class="badge engine">xeme_aeo_score</span></div>
+        <p style="color: var(--text-dim); font-size: 12px; margin-bottom: var(--s-3);">
+          0-100: mention rate + citation rate + position.
+        </p>
+        <button class="btn btn-secondary" onclick="doAEOScore()">Compute</button>
+        <div id="aeo-score-result" style="margin-top: var(--s-3);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent leads -->
+  <div class="section">
+    <h2>[ recent leads — workspace/*.csv ]</h2>
+    <div class="card">
+      <div id="leads-container"><div class="empty"><span class="loading"></span></div></div>
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="section">
+    <h2>[ mcp tools — xeme-mcp stdio ]</h2>
+    <div class="card">
+      <div id="tools-container"><div class="empty"><span class="loading"></span></div></div>
+    </div>
+  </div>
+
+  <!-- OpenAPI / CLI -->
+  <div class="section">
+    <h2>[ developer reference ]</h2>
+    <div class="card">
+      <div class="card-title">API Endpoints</div>
+      <pre><code>GET  /                       # this dashboard
+GET  /api/status             # full engine status
+GET  /api/engines            # engine health
+GET  /api/leads              # recent enriched leads
+GET  /api/runs               # pipeline run history
+GET  /api/signals            # recent signals
+GET  /api/tools              # MCP tool list
+GET  /api/intel/status       # intel providers
+GET  /api/intel/lookup?domain=...
+
+POST /api/run/enrich   body: {"input": "/path/to.csv", "output": "..."}
+POST /api/run/score    body: {"input": "/path/to.csv", "min_score": 50}
+POST /api/run/pipe     body: {"input": "/path/to.csv", "no_crm": false}</code></pre>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div>
+    xeme — AI-native GTM OS · v{{.AppVersion}} · {{.Arch}}/{{.GOOS}}
+  </div>
+  <div style="margin-top: var(--s-2);">
+    <a href="/api/status">/api/status</a> · <a href="/api/tools">/api/tools</a> · <a href="https://github.com/rasulshaikh/xeme-os" target="_blank">github</a>
+  </div>
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const escape = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Initial load
+  loadStatus();
+  loadLeads();
+  loadTools();
+  loadAEOStatus();
+  setInterval(loadStatus, 8000);
+
+  async function loadStatus() {
+    try {
+      const r = await fetch('/api/status');
+      const s = await r.json();
+
+      $('meta-uptime').textContent = `uptime: ${s.uptime || '—'}`;
+
+      const engines = s.engines || {};
+      const engineCount = Object.keys(engines).length;
+      const okCount = Object.values(engines).filter(e => e && (e.ok || e.version)).length;
+      $('stat-engines').textContent = `${okCount}/${engineCount}`;
+
+      const moltsetsOn = engines.enrich && engines.enrich.moltsets && engines.enrich.moltsets.enabled;
+      const theirstackOn = engines.intel && engines.intel.theirstack && engines.intel.theirstack.enabled;
+      const premiumCount = (moltsetsOn ? 1 : 0) + (theirstackOn ? 1 : 0);
+      $('stat-premium').innerHTML = premiumCount > 0
+        ? `<span class="pill success">${premiumCount}/2</span>`
+        : `<span class="pill warn">set keys</span>`;
+
+      $('stat-free').innerHTML = `<span class="pill success">3/3</span>`;
+
+      const tools = await fetch('/api/tools').then(r => r.json());
+      $('stat-tools').textContent = tools.count;
+
+      // Engine grid
+      const grid = $('engines-grid');
+      grid.innerHTML = '';
+      const engineDisplay = [
+        { key: 'signal', mark: 'S', name: 'Signal Engine', desc: 'Scrapes engagers from public posts' },
+        { key: 'enrich', mark: 'E', name: 'Enrichment Engine', desc: '4-tier waterfall (local → MoltSets)' },
+        { key: 'intel', mark: 'I', name: 'Intelligence Engine', desc: 'Tech + hiring + intent signals' },
+        { key: 'aeo', mark: 'A', name: 'AEO / GEO Engine', desc: 'AI-search visibility tracker' },
+        { key: 'ledger', mark: 'L', name: 'Ledger (CRM)', desc: 'GraphQL + SQLite store' },
+      ];
+      engineDisplay.forEach(e => {
+        const eng = engines[e.key] || {};
+        const ok = eng.ok !== false && eng.version;
+        const details = [];
+        if (eng.version) details.push(`<span class="pill">v${escape(eng.version.split(' ')[1] || eng.version)}</span>`);
+        if (eng.balance !== undefined) details.push(`<span class="pill">$${eng.balance.toFixed(2)}</span>`);
+        if (eng.moltsets && eng.moltsets.enabled) details.push(`<span class="pill success">molt</span>`);
+        else if (eng.moltsets) details.push(`<span class="pill warn">no molt</span>`);
+        if (eng.theirstack && eng.theirstack.enabled) details.push(`<span class="pill success">theirstack</span>`);
+        else if (eng.theirstack) details.push(`<span class="pill warn">no ts</span>`);
+        if (eng.builtwith) details.push(`<span class="pill info">bw</span>`);
+        if (eng.scraper) details.push(`<span class="pill info">hn</span>`);
+
+        grid.innerHTML += `
+          <div class="card">
+            <div class="engine">
+              <div class="engine-icon">${escape(e.mark)}</div>
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: var(--s-2);">
+                  <div class="engine-name">${escape(e.name)}</div>
+                  <div class="status-dot ${ok ? 'ok' : 'err'}"></div>
+                </div>
+                <div class="engine-status">${escape(e.desc)}</div>
+                <div style="margin-top: var(--s-2); display: flex; gap: var(--s-1); flex-wrap: wrap;">${details.join('')}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadLeads() {
+    try {
+      const r = await fetch('/api/leads');
+      const s = await r.json();
+      const container = $('leads-container');
+      if (!s.leads || s.leads.length === 0) {
+        container.innerHTML = `<div class="empty"><div class="empty-icon">[ -- ]</div>no leads yet — run a pipeline to populate workspace/final_*.csv</div>`;
+        return;
+      }
+      const headers = Object.keys(s.leads[0]).slice(0, 8);
+      let html = `<div style="overflow-x: auto;"><table><thead><tr>${headers.map(h => `<th>${escape(h)}</th>`).join('')}</tr></thead><tbody>`;
+      s.leads.slice(0, 10).forEach(row => {
+        html += `<tr>${headers.map(h => `<td class="dim">${escape(row[h] || '')}</td>`).join('')}</tr>`;
+      });
+      html += '</tbody></table></div>';
+      html += `<div style="margin-top: var(--s-3); color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;">showing 10 of ${s.count} leads</div>`;
+      container.innerHTML = html;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadTools() {
+    try {
+      const r = await fetch('/api/tools');
+      const s = await r.json();
+      const container = $('tools-container');
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-2);">';
+      s.tools.forEach(t => {
+        const engineClass = t.engine.includes('moltsets') ? 'success' : t.engine.includes('intel') ? 'info' : 'info';
+        html += `
+          <div style="padding: var(--s-3); background: var(--bg); border: var(--b-1);">
+            <div style="display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-1);">
+              <code style="font-size: 11px; color: var(--accent);">${escape(t.name)}</code>
+            </div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-bottom: var(--s-2); line-height: 1.4;">${escape(t.description)}</div>
+            <span class="pill ${engineClass}">${escape(t.engine)}</span>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Actions
+  async function doLookup() {
+    const domain = $('lookup-domain').value.trim();
+    if (!domain) return;
+    const result = $('lookup-result');
+    result.innerHTML = '<span class="loading"></span> looking up...';
+    try {
+      const r = await fetch(`/api/intel/lookup?domain=${encodeURIComponent(domain)}`);
+      const data = await r.json();
+      if (data.error) {
+        result.innerHTML = `<span class="pill err">${escape(data.error)}</span>`;
+        return;
+      }
+      const techs = (data.technologies || []).slice(0, 8);
+      result.innerHTML = `
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--s-2);">
+          <span class="pill ${data.source === 'theirstack' ? 'success' : data.source === 'builtwith-free' ? 'info' : 'accent'}">${escape(data.source || 'unknown')}</span>
+          <span class="pill">conf: ${data.confidence || '—'}</span>
+          ${data.job_postings_count ? `<span class="pill">${data.job_postings_count} jobs</span>` : ''}
+        </div>
+        ${techs.length ? `<div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--s-1);">technologies</div><div style="display: flex; gap: 4px; flex-wrap: wrap;">${techs.map(t => `<span class="pill info">${escape(t)}</span>`).join('')}</div>` : ''}
+      `;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  async function doPipe() {
+    const input = $('pipe-input').value.trim();
+    if (!input) return;
+    const result = $('pipe-result');
+    result.innerHTML = '<span class="loading"></span> running pipe...';
+    try {
+      const r = await fetch('/api/run/pipe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ input, no_crm: false })
+      });
+      const data = await r.json();
+      result.innerHTML = data.ok
+        ? `<span class="pill success">pipe complete</span>${'<pre><code>' + escape(JSON.stringify(data, null, 2).substring(0, 500)) + '</code></pre>'}`
+        : `<span class="pill err">${escape(data.error || 'failed')}</span>`;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  async function doEnrich() {
+    const input = $('enrich-input').value.trim();
+    if (!input) return;
+    const result = $('enrich-result');
+    result.innerHTML = '<span class="loading"></span> enriching...';
+    try {
+      const r = await fetch('/api/run/enrich', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ input })
+      });
+      const data = await r.json();
+      result.innerHTML = data.ok
+        ? `<span class="pill success">${data.rows_in} → ${data.rows_out}</span> <code style="font-size: 11px;">${escape(data.output)}</code>`
+        : `<span class="pill err">${escape(data.error || 'failed')}</span>`;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  async function doScore() {
+    const input = $('score-input').value.trim();
+    if (!input) return;
+    const result = $('score-result');
+    result.innerHTML = '<span class="loading"></span> scoring...';
+    try {
+      const r = await fetch('/api/run/score', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ input, min_score: 0 })
+      });
+      const data = await r.json();
+      result.innerHTML = data.ok
+        ? `<span class="pill success">${data.count} scored</span><pre><code>${escape(JSON.stringify(data.summary, null, 2))}</code></pre>`
+        : `<span class="pill err">${escape(data.error || 'failed')}</span>`;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  // AEO functions
+  async function loadAEOStatus() {
+    try {
+      const r = await fetch('/api/aeo/status');
+      const data = await r.json();
+      const result = $('aeo-status-result');
+      if (!data.brand) {
+        result.innerHTML = `<span class="pill warn">not configured</span><div style="margin-top: var(--s-2); font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">${escape(data.hint || 'set XEME_AEO_BRAND')}</div>`;
+        return;
+      }
+      result.innerHTML = `
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--s-2);">
+          <span class="pill accent">${escape(data.brand)}</span>
+          <span class="pill">${escape(data.domain || 'no domain')}</span>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--s-1);">prompts</div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--s-2);">${(data.prompts || []).map(p => `<span class="pill info">${escape(p)}</span>`).join('') || '<span class="pill">none</span>'}</div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--s-1);">engines</div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">${(data.engines || []).map(e => `<span class="pill success">${escape(e)}</span>`).join('')}</div>
+      `;
+    } catch (e) {
+      $('aeo-status-result').innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  async function doAEOCheck() {
+    const result = $('aeo-check-result');
+    result.innerHTML = '<span class="loading"></span> checking... (30-60s)';
+    try {
+      const r = await fetch('/api/aeo/check');
+      const data = await r.json();
+      if (data.error) {
+        result.innerHTML = `<span class="pill err">${escape(data.error)}</span>`;
+        return;
+      }
+      const mentioned = (data.results || []).filter(r => r.mentioned).length;
+      const total = (data.results || []).length;
+      const gapCount = (data.gaps || []).length;
+      let html = `
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--s-2);">
+          <span class="pill ${mentioned > 0 ? 'success' : 'warn'}">${mentioned}/${total} mentioned</span>
+          <span class="pill ${gapCount > 0 ? 'warn' : 'success'}">${gapCount} gaps</span>
+        </div>
+      `;
+      if (data.gaps && data.gaps.length > 0) {
+        html += '<div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--s-1);">top gaps</div>';
+        data.gaps.slice(0, 3).forEach(g => {
+          html += `<div style="padding: var(--s-2); background: var(--bg); border: var(--b-1); margin-bottom: var(--s-1); font-size: 12px;">
+            <div style="color: var(--text);">${escape(g.prompt)}</div>
+            <div style="color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; margin-top: 2px;">mentioned: ${g.mentioned_brands.join(', ') || '—'}</div>
+          </div>`;
+        });
+      }
+      result.innerHTML = html;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+
+  async function doAEOScore() {
+    const result = $('aeo-score-result');
+    result.innerHTML = '<span class="loading"></span> scoring...';
+    try {
+      const r = await fetch('/api/aeo/score');
+      const data = await r.json();
+      if (data.error) {
+        result.innerHTML = `<span class="pill err">${escape(data.error)}</span>`;
+        return;
+      }
+      const scoreColor = data.overall_score >= 70 ? 'success' : data.overall_score >= 40 ? 'warn' : 'err';
+      let html = `
+        <div style="display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-3);">
+          <div style="font-family: var(--font-display); font-size: 36px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em;">${data.overall_score}</div>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">/ 100</div>
+        </div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--s-2);">
+          <span class="pill">mention: ${(data.mention_rate * 100).toFixed(0)}%</span>
+          <span class="pill">cite: ${(data.citation_rate * 100).toFixed(0)}%</span>
+          <span class="pill">pos: ${data.avg_position ? data.avg_position.toFixed(1) : '—'}</span>
+        </div>
+      `;
+      if (data.engine_breakdown) {
+        html += '<div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--s-1);">by engine</div>';
+        Object.values(data.engine_breakdown).forEach(es => {
+          const mr = (es.mention_rate * 100).toFixed(0);
+          html += `<div style="font-size: 12px; display: flex; justify-content: space-between; padding: 2px 0; font-family: var(--font-mono);">
+            <span style="color: var(--text-dim);">${escape(es.engine)}</span>
+            <span class="pill ${es.mention_rate > 0.5 ? 'success' : es.mention_rate > 0 ? 'warn' : 'err'}">${mr}%</span>
+          </div>`;
+        });
+      }
+      result.innerHTML = html;
+    } catch (e) {
+      result.innerHTML = `<span class="pill err">${escape(e.message)}</span>`;
+    }
+  }
+</script>
+</body>
+</html>

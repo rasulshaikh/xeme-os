@@ -1,13 +1,28 @@
-# Binaries
-xeme
-xeme-mcp
-xeme-os
-xeme-campaigns
-xeme-ledger-server
-xeme-workflows
+# Binaries (only ignore actual built files, not the cmd/ source dirs)
+# Linux/macOS
+/xeme
+/xeme-mcp
+/xeme-os
+/xeme-campaigns
+/xeme-ledger-server
+/xeme-workflows
+# Windows
 *.exe
 *.dylib
 *.so
+# Built binaries inside cmd/<name>/
+/cmd/xeme/xeme
+/cmd/xeme-mcp/xeme-mcp
+/cmd/xeme-os/xeme-os
+/cmd/xeme-campaigns/xeme-campaigns
+/cmd/xeme-ledger/xeme-ledger-server
+/cmd/xeme-workflows/xeme-workflows
+# Frontend built assets
+/frontend/.next/
+/frontend/out/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/build/
 
 # Runtime
 workspace/

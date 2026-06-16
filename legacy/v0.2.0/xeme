@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Xeme OS — Proprietary GTM CLI
+# The unified command-line interface for the Xeme operating system.
+#
+# Xeme OS modules (all proprietary):
+#   • xeme-signal  — LinkedIn + intent-signal ingestion
+#   • xeme-enrich  — multi-provider enrichment waterfall
+#   • xeme-crm     — built-in CRM with GraphQL surface
+#   • xeme-score   — ICP scoring engine
+#   • xeme-seq     — multichannel campaign sequencer
+#   • xeme-ai      — multi-LLM copy + research router
+
+# Resolve real path (handles symlinks)
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+  TARGET=$(readlink "$SOURCE")
+  if [[ "$TARGET" = /* ]]; then
+    SOURCE="$TARGET"
+  else
+    SOURCE="$(dirname "$SOURCE")/$TARGET"
+  fi
+done
+XEME_ROOT="$(cd "$(dirname "$SOURCE")/.." && pwd)"
+
+# Source all libs upfront so functions are available everywhere
+source "$XEME_ROOT/lib/common.sh"
+source "$XEME_ROOT/lib/signal.sh"
+source "$XEME_ROOT/lib/enrich.sh"
+source "$XEME_ROOT/lib/crm.sh"
+source "$XEME_ROOT/lib/pipe.sh"
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  status)
+    section "Xeme OS — Status"
+    info "Xeme Signal:    $(command -v xeme-signal || echo NOT FOUND)"
+    info "Signal version: $(xeme_signal_version 2>/dev/null || echo '?')"
+    echo ""
+    info "Xeme Enrich:    $(command -v xeme-enrich || echo NOT FOUND)"
+    info "Enrich version: $(xeme_enrich_version 2>/dev/null || echo '?')"
+    info "Enrich balance:"
+    xeme_enrich_balance 2>&1 | sed 's/^/    /'
+    echo ""
+    info "Xeme CRM:"
+    xeme_crm_status
+    echo ""
+    ok "All systems checked"
+    ;;
+
+  version|--version|-V)
+    echo "xeme v0.3.0 (proprietary)"
+    echo "  Signal: $(xeme_signal_version 2>/dev/null || echo '?')"
+    echo "  Enrich: $(xeme_enrich_version 2>/dev/null || echo '?')"
+    echo "  CRM:    built-in (configured at ~/.xeme/crm.json)"
+    echo "  Root:   $XEME_ROOT"
+    ;;
+
+  config)
+    section "Xeme OS — Resolved Config"
+    cat "$XEME_CONFIG"
+    ;;
+
+  scrape|signal)
+    url="" out="" account="" max_pages="10"
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --url) url="$2"; shift 2 ;;
+        --out) out="$2"; shift 2 ;;
+        --account) account="$2"; shift 2 ;;
+        --max-pages) max_pages="$2"; shift 2 ;;
+        *) warn "Unknown: $1"; shift ;;
+      esac
+    done
+    [[ -z "$url" ]] && { error "Provide --url"; exit 1; }
+    [[ -z "$out" ]] && out="$XEME_ROOT/workspace/$(ts_filename xeme_signal json)"
+    xeme_signal_scrape_post "$url" "$out" "$account" "$max_pages"
+    ;;
+
+  enrich)
+    input="" output=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --in|--input) input="$2"; shift 2 ;;
+        --out|--output) output="$2"; shift 2 ;;
+        *) warn "Unknown: $1"; shift ;;
+      esac
+    done
+    [[ -z "$input" ]] && { error "Provide --in <csv>"; exit 1; }
+    [[ -z "$output" ]] && output="$XEME_ROOT/workspace/$(ts_filename xeme_enriched csv)"
+    xeme_enrich_run "$input" "$output"
+    ;;
+
+  crm)
+    sub="${1:-status}"; shift || true
+    case "$sub" in
+      status)
+        xeme_crm_status
+        ;;
+      sync)
+        csv="" dry_run=false
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            --in|--input) csv="$2"; shift 2 ;;
+            --dry-run) dry_run=true; shift ;;
+            *) warn "Unknown: $1"; shift ;;
+          esac
+        done
+        [[ -z "$csv" ]] && { error "Provide --in <csv>"; exit 1; }
+        xeme_crm_sync "$csv" "$dry_run"
+        ;;
+      *)
+        echo "Usage: xeme crm {status|sync --in <csv> [--dry-run]}"
+        ;;
+    esac
+    ;;
+
+  pipe)
+    xeme_pipe_run "$@"
+    ;;
+
+  help|--help|-h|"")
+    cat <<HELPEOF
+Xeme OS v0.3.0 — Proprietary AI-Native GTM Operating System
+
+Usage: xeme <command> [options]
+
+Core modules (all built and owned by Xeme):
+  status              Health check across signal, enrich, CRM
+  version             Print versions of each Xeme module
+  config              Show resolved config
+  signal              Xeme Signal: scrape LinkedIn post engagers
+                        --url <linkedin-post-url>
+                        --out <output.json>
+                        [--account <xeme-account>]
+                        [--max-pages N]
+  enrich              Xeme Enrich: waterfall enrich a CSV
+                        --in <input.csv>
+                        --out <output.csv>
+  crm status          Xeme CRM: probe connection
+  crm sync            Xeme CRM: sync CSV → CRM
+                        --in <input.csv>
+                        [--dry-run]
+  pipe                THE pipe — end-to-end
+                        --signal-url <linkedin-post-url>
+                          (or --input <existing.csv>)
+                        [--roles "CMO,VP Marketing"]
+                        [--min-score 60]
+                        [--no-crm]
+                        [--dry-run]
+
+Examples:
+  xeme status
+  xeme pipe --signal-url <linkedin-post-url> --roles "CMO,VP Marketing"
+  xeme enrich --in workspace/leads.csv --out workspace/enriched.csv
+  xeme crm sync --in workspace/final.csv --dry-run
+
+All modules are part of the Xeme OS proprietary codebase.
+No third-party GTM platforms are bundled or required.
+HELPEOF
+    ;;
+
+  *)
+    error "Unknown command: $cmd"
+    echo "Run 'xeme help' for usage"
+    exit 1
+    ;;
+esac
