@@ -1,0 +1,197 @@
+name: release
+
+# Triggers:
+#   1. Push of a tag matching v*.*.*  (e.g. v1.3.0)
+#   2. Manual dispatch via the Actions UI
+#
+# What it does:
+#   - Builds all 6 binaries on macOS, Linux, Windows (Apple Silicon + Intel)
+#   - Packages them into a single tar.gz / zip per platform
+#   - Uploads to the GitHub release for the tag
+#   - Updates the install/install.sh JSON manifest with the latest version
+#
+# The install script at install/install.sh downloads from this release:
+#   https://github.com/rasulshaikh/xeme-os/releases/latest/download/xeme_${OS}_${ARCH}.tar.gz
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.3.0)'
+        required: true
+        default: 'v1.3.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Apple Silicon (your M3)
+          - os: macos-latest
+            target: darwin_arm64
+            archive: tar.gz
+            bin_name: xeme
+          - os: macos-latest
+            target: darwin_amd64
+            archive: tar.gz
+            bin_name: xeme
+          # Linux
+          - os: ubuntu-latest
+            target: linux_amd64
+            archive: tar.gz
+            bin_name: xeme
+          - os: ubuntu-latest
+            target: linux_arm64
+            archive: tar.gz
+            bin_name: xeme
+          # Windows
+          - os: windows-latest
+            target: windows_amd64
+            archive: zip
+            bin_name: xeme.exe
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: build all binaries
+        working-directory: ${{ github.workspace }}
+        env:
+          GOOS: ${{ matrix.target == 'darwin_arm64' && 'darwin' || (matrix.target == 'darwin_amd64' && 'darwin' || (matrix.target == 'linux_arm64' && 'linux' || (matrix.target == 'linux_amd64' && 'linux' || 'windows'))) }}
+          GOARCH: ${{ matrix.target == 'darwin_arm64' && 'arm64' || (matrix.target == 'darwin_amd64' && 'amd64' || (matrix.target == 'linux_arm64' && 'arm64' || (matrix.target == 'linux_amd64' && 'amd64' || 'amd64'))) }}
+          CGO_ENABLED: '0'
+        run: |
+          set -e
+          mkdir -p dist/xeme
+          echo "Building for $GOOS/$GOARCH..."
+          for cmd in xeme xeme-os xeme-mcp xeme-campaigns xeme-ledger-server xeme-workflows; do
+            if [ "$GOOS" = "windows" ]; then
+              binname="$cmd.exe"
+            else
+              binname="$cmd"
+            fi
+            # cmd name → directory name
+            case "$cmd" in
+              xeme) dir="xeme" ;;
+              xeme-os) dir="xeme-os" ;;
+              xeme-mcp) dir="xeme-mcp" ;;
+              xeme-campaigns) dir="xeme-campaigns" ;;
+              xeme-ledger-server) dir="xeme-ledger" ;;
+              xeme-workflows) dir="xeme-workflows" ;;
+            esac
+            go build -trimpath -ldflags="-s -w" -o "dist/xeme/$binname" "./cmd/$dir"
+          done
+          # Copy install script and README for offline install
+          cp install/install.sh dist/xeme/install.sh
+          cp README.md dist/xeme/README.md
+          chmod +x dist/xeme/install.sh
+          # Copy dashboard HTML (already embedded in the binary, but keep for reference)
+          ls -la dist/xeme/
+
+      - name: package tar.gz
+        if: matrix.archive == 'tar.gz'
+        working-directory: ${{ github.workspace }}/dist
+        run: |
+          mv xeme xeme_${{ matrix.target }}
+          tar -czf xeme_${{ matrix.target }}.tar.gz xeme_${{ matrix.target }}
+          ls -la
+
+      - name: package zip
+        if: matrix.archive == 'zip'
+        working-directory: ${{ github.workspace }}/dist
+        run: |
+          mv xeme xeme_${{ matrix.target }}
+          # PowerShell Compress-Archive
+          Compress-Archive -Path xeme_${{ matrix.target }} -DestinationPath xeme_${{ matrix.target }}.zip
+          ls -la
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeme-${{ matrix.target }}
+          path: dist/xeme_${{ matrix.target }}.${{ matrix.archive }}
+          if-no-files-found: error
+
+  release:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: list artifacts
+        run: ls -la artifacts/
+
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: XEME OS ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
+          body: |
+            ## XEME OS ${{ github.ref_name }}
+
+            5 proprietary GTM engines in a single Go binary. Replaces Clay, Salesforce, Instantly, Gong, Intercom for $0-50/mo.
+
+            ### Install
+
+            ```bash
+            # macOS / Linux (auto-detects Apple Silicon / Intel)
+            curl -fsSL https://raw.githubusercontent.com/rasulshaikh/xeme-os/main/install/install.sh | bash
+
+            # Or download the binary for your platform:
+            # - darwin_arm64.tar.gz   (Apple Silicon — your M3)
+            # - darwin_amd64.tar.gz   (Intel Mac)
+            # - linux_amd64.tar.gz    (most Linux)
+            # - linux_arm64.tar.gz    (ARM Linux)
+            # - windows_amd64.zip     (Windows 10/11)
+            ```
+
+            ### Quickstart
+
+            ```bash
+            xeme init          # scaffold ~/.xeme/
+            xeme serve         # start local dashboard :4903
+            xeme enrich        # waterfall-enrich a CSV
+            xeme score         # 7-gate ICP scoring
+            xeme pipe          # end-to-end
+            ```
+
+            ### What's included
+
+            - 5 engines (Signal, Enrich, Intel, AEO/GEO, Scorer)
+            - 6 binaries (xeme, xeme-os, xeme-mcp, xeme-campaigns, xeme-ledger-server, xeme-workflows)
+            - 20 MCP tools for Claude Code / YALC / Cursor / n8n
+            - Deepline-style CLI with unified verb namespace
+
+            Full docs: https://github.com/rasulshaikh/xeme-os
+
+      - name: summary
+        run: |
+          echo "✅ Release ${{ github.ref_name }} published (draft)"
+          echo "👉 https://github.com/rasulshaikh/xeme-os/releases/tag/${{ github.ref_name }}"
